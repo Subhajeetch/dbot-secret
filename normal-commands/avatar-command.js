@@ -22,9 +22,11 @@ const avatarCommand = async message => {
     message.content.startsWith(`${serverPrifix}avatar`)
   ) {
     try {
-      const args = message.content.split(" ").slice(1); // Get the arguments after the command
+      const allArgs = message.content.split(" ").slice(1); // Get all arguments after the command
+      // Filter out the --heart flag from args for user processing
+      const args = allArgs.filter(arg => arg !== "--heart");
 
-      // Check if the number of mentions or usernames is more than 2
+      // Check if the number of mentions or usernames (excluding --heart) is more than 2
       if (message.mentions.users.size > 2 || args.length > 2) {
         const provideTwoUserEmbed = errorEmbed("Please provide only 2 users.");
         await message.reply({ embeds: [provideTwoUserEmbed] });
@@ -77,6 +79,9 @@ const avatarCommand = async message => {
         const avatarURL1 = getAvatarURL(targetUser1);
         const avatarURL2 = getAvatarURL(targetUser2);
 
+        // Check if --heart flag is present
+        const showHeart = message.content.includes("--heart");
+
         const outputPath = "output-avatar.png";
 
         // Send "Generating..." embed
@@ -90,7 +95,7 @@ const avatarCommand = async message => {
           embeds: [generatingEmbed]
         });
 
-        generateLoveImage(avatarURL1, avatarURL2, outputPath, async err => {
+        generateLoveImage(avatarURL1, avatarURL2, outputPath, showHeart, async err => {
           if (err) {
             console.error("Error generating the love image:", err);
             const wentWrongEmbed = errorEmbed(

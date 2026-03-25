@@ -1,14 +1,11 @@
 const { Client, GatewayIntentBits } = require("discord.js");
-const im = require("imagemagick");
-const axios = require("axios");
-const fs = require("fs");
 const express = require("express");
 const bodyParser = require("body-parser");
-const multer = require("multer");
+const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 const cors = require("cors");
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 const serverPrefix = require("./prifix.js");
 const { startTasks } = require("./startingTasks.js");
@@ -16,17 +13,18 @@ const {
   afkCommand,
   checkAfkStatus,
   checkMentionedAfk
-} = require("./cool-features/afkCommand.js");
-const levelUp = require("./cool-features/level-up.js");
-const avatarCommand = require("./cool-features/avatar-command.js");
-const purgeCommand = require("./cool-features/purgeCommand.js");
-const timeoutCommand = require("./cool-features/timeoutCommand.js");
-const unmuteCommand = require("./cool-features/unMuteCommand.js");
-const kickCommand = require("./cool-features/kickCommand.js");
-const banCommand = require("./cool-features/banCommand.js");
-const unbanCommand = require("./cool-features/unbanCommand.js");
+} = require("./normal-commands/afkCommand.js");
+const levelUp = require("./normal-commands/level-up.js");
+const avatarCommand = require("./normal-commands/avatar-command.js");
+const purgeCommand = require("./normal-commands/purgeCommand.js");
+const timeoutCommand = require("./normal-commands/timeoutCommand.js");
+const unmuteCommand = require("./normal-commands/unMuteCommand.js");
+const kickCommand = require("./normal-commands/kickCommand.js");
+const banCommand = require("./normal-commands/banCommand.js");
+const unbanCommand = require("./normal-commands/unbanCommand.js");
 
-const banEveryoneCommand = require("./cool-features/ownerBanEveryOneCommand.js");
+//const banEveryoneCommand = require("./normal-commands/ownerBanEveryOneCommand.js");
+const colorCommand = require("./normal-commands/checkColor.js")
 
 const sendBugReport = require("./AnimekunSiteApi/bugReports.js");
 const sendContact = require("./AnimekunSiteApi/contactApi.js");
@@ -46,6 +44,23 @@ const client = new Client({
   ]
 });
 
+// Load slash commands into a map on the client
+client.slashCommands = new Map();
+try {
+  const slashPath = path.resolve(__dirname, "slash-commands");
+  if (fs.existsSync(slashPath)) {
+    const slashFiles = fs.readdirSync(slashPath).filter(f => f.endsWith(".js"));
+    for (const file of slashFiles) {
+      const command = require(path.join(slashPath, file));
+      if (command && command.data && command.execute) {
+        client.slashCommands.set(command.data.name, command);
+      }
+    }
+  }
+} catch (err) {
+  console.error("Failed to load slash commands:", err);
+}
+
 const botIconChangeTime = 8; //number (in minutes)
 const botStatusChangeTime = 1; //number (in minutes)
 
@@ -62,6 +77,8 @@ client.on("messageCreate", async message => {
   unbanCommand(message); // unban command
   // banEveryoneCommand(message); // ban evryone command
 
+  colorCommand(message);
+
   checkMentionedAfk(message); // checks if user is afk & sends response
   await checkAfkStatus(message); // afk status
 
@@ -76,6 +93,27 @@ client.on("messageCreate", async message => {
     await message.reply(
       `Pong! 🏓\nServer Latency: ${ping}ms\nAPI Latency: ${apiPing}ms`
     );
+  }
+});
+
+// Handle slash commands
+client.on("interactionCreate", async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+  const command = client.slashCommands.get(interaction.commandName);
+  if (!command) return;
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(`Error executing /${interaction.commandName}:`, error);
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.editReply("There was an error while executing this command.");
+      } else {
+        await interaction.reply("There was an error while executing this command.");
+      }
+    } catch (err) {
+      console.error("Failed to send error reply:", err);
+    }
   }
 });
 
@@ -124,7 +162,7 @@ app.post("/bug/report", async (req, res) => {
 
 app.post("/contact", async (req, res) => {
   try {
-   // console.log("Received request body:", req.body);
+    // console.log("Received request body:", req.body);
     const { name, email, desc } = req.body;
 
     // Validate input
