@@ -1,23 +1,45 @@
 const searchUser = async (guild, searchTerm) => {
-  if (!guild) return null;
+  if (!guild || !searchTerm) return null;
 
-  // Fetch all members in the guild
-  const members = await guild.members.fetch();
+  try {
+    const cleanTerm = searchTerm.toLowerCase();
 
-  // Search for a user by nickname or username or display name (if no nickname)
-  const user = members.find(member => {
-    const username = member.user.username.toLowerCase(); // Username outside of the server
-    const nickname = member.nickname ? member.nickname.toLowerCase() : null; // Server-specific nickname
-    const displayName = member.user.tag.toLowerCase(); // Display name (username#discriminator)
+    // Query Discord API directly instead of fetching every member in the server
+    const queriedMembers = await guild.members.fetch({
+      query: searchTerm,
+      limit: 10
+    });
 
+    if (queriedMembers.size > 0) {
+      return (
+        queriedMembers.find(
+          m =>
+            m.user.username.toLowerCase() === cleanTerm ||
+            (m.nickname && m.nickname.toLowerCase() === cleanTerm)
+        ) || queriedMembers.first()
+      );
+    }
+
+    // Fallback to currently cached members
     return (
-      username.includes(searchTerm.toLowerCase()) ||
-      (nickname && nickname.includes(searchTerm.toLowerCase())) ||
-      displayName.includes(searchTerm.toLowerCase())
-    );
-  });
+      guild.members.cache.find(member => {
+        const username = member.user.username.toLowerCase();
+        const nickname = member.nickname ? member.nickname.toLowerCase() : null;
+        const globalName = member.user.globalName
+          ? member.user.globalName.toLowerCase()
+          : null;
 
-  return user || null; // Return null if no user is found
+        return (
+          username.includes(cleanTerm) ||
+          (nickname && nickname.includes(cleanTerm)) ||
+          (globalName && globalName.includes(cleanTerm))
+        );
+      }) || null
+    );
+  } catch (error) {
+    console.error("Error searching user:", error);
+    return null;
+  }
 };
 
 module.exports = searchUser;

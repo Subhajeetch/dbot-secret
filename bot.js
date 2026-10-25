@@ -1,12 +1,11 @@
+require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const express = require("express");
-const bodyParser = require("body-parser");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
 const cors = require("cors");
-const PORT = process.env.PORT || 8080;
 
+const PORT = process.env.PORT || 8080;
 const serverPrefix = require("./prifix.js");
 const { startTasks } = require("./startingTasks.js");
 const {
@@ -22,15 +21,38 @@ const unmuteCommand = require("./normal-commands/unMuteCommand.js");
 const kickCommand = require("./normal-commands/kickCommand.js");
 const banCommand = require("./normal-commands/banCommand.js");
 const unbanCommand = require("./normal-commands/unbanCommand.js");
+const colorCommand = require("./normal-commands/checkColor.js");
 
-//const banEveryoneCommand = require("./normal-commands/ownerBanEveryOneCommand.js");
-const colorCommand = require("./normal-commands/checkColor.js")
+// Clean up any leftover temp files from previous runs
+const cleanupLeftoverTempFiles = () => {
+  const dirsToClean = [__dirname, path.join(__dirname, "imagemagick_templates")];
+  const tempPatterns = [
+    /^avatar.*\.png$/i,
+    /^heart_.*\.png$/i,
+    /^output-avatar\.png$/i,
+    /^ping\.png$/i,
+    /^temp-avatar-.*\.(tmp|jpg|png)$/i
+  ];
 
-const sendBugReport = require("./AnimekunSiteApi/bugReports.js");
-const sendContact = require("./AnimekunSiteApi/contactApi.js");
+  for (const dir of dirsToClean) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir)) {
+      if (tempPatterns.some(regex => regex.test(file))) {
+        try {
+          fs.unlinkSync(path.join(dir, file));
+          console.log(`🧹 Removed leftover temp file: ${file}`);
+        } catch (err) {
+          console.warn(`⚠️ Failed to remove temp file ${file}:`, err.message);
+        }
+      }
+    }
+  }
+};
+
+cleanupLeftoverTempFiles();
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
@@ -39,8 +61,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.DirectMessages
+    GatewayIntentBits.GuildMembers
   ]
 });
 
@@ -61,38 +82,45 @@ try {
   console.error("Failed to load slash commands:", err);
 }
 
-const botIconChangeTime = 8; //number (in minutes)
-const botStatusChangeTime = 1; //number (in minutes)
+const botIconChangeTime = 60; // 60 minutes (safe from Discord avatar rate limits)
+const botStatusChangeTime = 1; // 1 minute
 
 client.on("messageCreate", async message => {
-  if (message.author.bot) return; // Ignore messages from bots
+  if (message.author.bot || !message.guild) return;
 
-  levelUp(message); //levelUp card
-  avatarCommand(message); // avatar command
-  purgeCommand(message); // purge command
-  timeoutCommand(message); // mute command
-  unmuteCommand(message); // ummute command
-  kickCommand(message); // kick command
-  banCommand(message); //ban command
-  unbanCommand(message); // unban command
-  // banEveryoneCommand(message); // ban evryone command
+  try {
+    // AFK checks first (ignore if the user is currently running ?afk)
+    const isAfkCmd =
+      message.content === `${serverPrefix}afk` ||
+      message.content.startsWith(`${serverPrefix}afk `);
 
-  colorCommand(message);
+    checkMentionedAfk(message);
+    if (!isAfkCmd) {
+      await checkAfkStatus(message);
+    }
 
-  checkMentionedAfk(message); // checks if user is afk & sends response
-  await checkAfkStatus(message); // afk status
+    if (!message.content.startsWith(serverPrefix)) return;
 
-  // Handle AFK command
-  if (message.content.startsWith(`${serverPrefix}afk`)) {
+    if (message.content.trim() === `${serverPrefix}ping`) {
+      const ping = Date.now() - message.createdTimestamp;
+      const apiPing = Math.round(client.ws.ping);
+      return await message.reply(
+        `Pong! 🏓\nServer Latency: ${ping}ms\nAPI Latency: ${apiPing}ms`
+      );
+    }
+
     await afkCommand(message);
-  }
-
-  if (message.content === `${serverPrefix}ping`) {
-    const ping = Date.now() - message.createdTimestamp;
-    const apiPing = Math.round(client.ws.ping);
-    await message.reply(
-      `Pong! 🏓\nServer Latency: ${ping}ms\nAPI Latency: ${apiPing}ms`
-    );
+    await levelUp(message);
+    await avatarCommand(message);
+    await purgeCommand(message);
+    await timeoutCommand(message);
+    await unmuteCommand(message);
+    await kickCommand(message);
+    await banCommand(message);
+    await unbanCommand(message);
+    await colorCommand(message);
+  } catch (err) {
+    console.error("Unhandled error in messageCreate:", err);
   }
 });
 
@@ -109,7 +137,10 @@ client.on("interactionCreate", async interaction => {
       if (interaction.replied || interaction.deferred) {
         await interaction.editReply("There was an error while executing this command.");
       } else {
-        await interaction.reply("There was an error while executing this command.");
+        await interaction.reply({
+          content: "There was an error while executing this command.",
+          ephemeral: true
+        });
       }
     } catch (err) {
       console.error("Failed to send error reply:", err);
@@ -117,79 +148,24 @@ client.on("interactionCreate", async interaction => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.send(`
-        <h1>Bot Alive!!! - MANTO999</h1>
-    `);
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
 });
-
-// this is for a bug report dont need to try this...
-//
-//
-//
-// THIS IS FOR ANOTHER PURPOSE IF YOU ARE USING THIS CODE, DONT FOLLOW THIS SECTION
-app.post("/bug/report", async (req, res) => {
-  try {
-    //console.log("Received request body:", req.body);
-    const { imageLink, email, name, bugDescription } = req.body;
-
-    // Validate input
-    if (!imageLink || !email || !name || !bugDescription) {
-      return res.status(400).json({ error: "All fields are required." });
-    }
-
-    // Send report to Discord using the shared client instance
-    const success = await sendBugReport(
-      client,
-      imageLink,
-      email,
-      name,
-      bugDescription
-    );
-    if (success) {
-      res.status(200).json({ message: "Bug report sent successfully!" });
-    } else {
-      res.status(500).json({ error: "Failed to send your report." });
-    }
-  } catch (error) {
-    console.error("Error processing request:", error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-});
-// bug report ended.
-
-//contact
-
-app.post("/contact", async (req, res) => {
-  try {
-    // console.log("Received request body:", req.body);
-    const { name, email, desc } = req.body;
-
-    // Validate input
-    if (!name || !email || !desc) {
-      return res.status(400).json({ error: "All fields are required." });
-    }
-
-    // Send report to Discord using the shared client instance
-    const success = await sendContact(client, name, email, desc);
-    ///console.log(success);
-    if (success) {
-      res.status(200).json({ message: "Contact sent successfully!" });
-    } else {
-      res.status(500).json({ error: "Failed to send your query." });
-    }
-  } catch (error) {
-    console.error("Error processing request:", error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-});
-// THIS IS FOR ANOTHER PURPOSE IF YOU ARE USING THIS CODE, DONT FOLLOW THIs SECTION
 
 app.listen(PORT, () => console.log(`Server Started! Port: ${PORT}`));
 
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
   startTasks(client, botStatusChangeTime, botIconChangeTime);
+});
+
+// Prevent unhandled errors from crashing the Render instance
+process.on("unhandledRejection", err => {
+  console.error("Unhandled Promise Rejection:", err);
+});
+
+process.on("uncaughtException", err => {
+  console.error("Uncaught Exception:", err);
 });
 
 client.login(process.env.TOKEN);

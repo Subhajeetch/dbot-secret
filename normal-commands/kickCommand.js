@@ -1,84 +1,82 @@
-const { errorEmbed, successEmbed } = require("../utils/embeds.js");
+const { errorEmbed } = require("../utils/embeds.js");
 const serverPrefix = require("../prifix.js");
 const { PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 
 const kickCommand = async message => {
-  if (
-    message.content.startsWith(`${serverPrefix}k`) ||
-    message.content.startsWith(`${serverPrefix}kick`)
-  ) {
-    try {
-      // Check if the user has permission to kick members
-      if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) {
-        const noPermEmbed = errorEmbed("You don't have permissions bro.");
-        return message.reply({ embeds: [noPermEmbed] });
-      }
+  const tokens = message.content.trim().split(/\s+/);
+  const cmd = tokens[0].toLowerCase();
 
-      const args = message.content
-        .slice(
-          serverPrefix.length +
-            (message.content.startsWith(`${serverPrefix}kick`) ? 5 : 1)
-        ) // Adjusted slicing length for the prefix `?`
-        .trim()
-        .split(/ +/g);
-      const mentionedUser = message.mentions.members.first();
+  if (cmd !== `${serverPrefix}k` && cmd !== `${serverPrefix}kick`) return;
 
-      // Function to send the kick guide embed
-      const sendKickGuide = () => {
-        const kickGuideEmbed = new EmbedBuilder()
-          .setTitle("🍃  Guide")
-          .setColor(0x54ff32)
-          .setDescription(
-            `**Usage:**\n${serverPrefix}k @user\n${serverPrefix}k @user reason\n${serverPrefix}kick @user reason\n\n**Examples:**\n${serverPrefix}kick @user Spamming\n${serverPrefix}k @user Rule violations`
-          )
-          .setFooter({ text: "Mention a user to kick them." });
-        return message.reply({ embeds: [kickGuideEmbed] });
-      };
+  try {
+    if (!message.member.permissions.has(PermissionFlagsBits.KickMembers)) {
+      const noPermEmbed = errorEmbed("You don't have permissions bro.");
+      return await message.reply({ embeds: [noPermEmbed] });
+    }
 
-      // Check for invalid input formats (e.g., missing spaces)
-      const commandRegex = new RegExp(
-        `^\\${serverPrefix}(kick|k)\\s+<@!?(\\d+)>\\s*(.*)?$`
-      ); // Escaped the `?` prefix in regex
-      if (!commandRegex.test(message.content)) {
-        return sendKickGuide();
-      }
+    const args = tokens.slice(1);
+    const mentionedUser = message.mentions.members.first();
 
-      // If no user is mentioned, send the guide
-      if (!mentionedUser) {
-        return sendKickGuide();
-      }
-
-      // Check if the bot can kick the user
-      if (!mentionedUser.kickable) {
-        const cantKickEmbed = new EmbedBuilder()
-          .setTitle("<:cross:1310179339005988945>  Unsuccessful")
-          .setColor(0xff0320)
-          .setDescription(`User is immune, can't kick.`);
-        return message.reply({ embeds: [cantKickEmbed] });
-      }
-
-      // Parse the reason
-      const reason = args.slice(1).join(" ") || "No reason provided";
-
-      // Kick the user
-      await mentionedUser.kick(reason);
-
-      // Send success embed
-      const successKickEmbed = new EmbedBuilder()
-        .setTitle("<:tick:1310179325152067676>  Success")
+    const sendKickGuide = () => {
+      const kickGuideEmbed = new EmbedBuilder()
+        .setTitle("🍃  Guide")
         .setColor(0x54ff32)
         .setDescription(
-          `**Successfully kicked  <@${mentionedUser.user.id}>.**\n\nReason: ${reason}.`
-        );
+          `**Usage:**\n${serverPrefix}k @user\n${serverPrefix}k @user reason\n${serverPrefix}kick @user reason\n\n**Examples:**\n${serverPrefix}kick @user Spamming\n${serverPrefix}k @user Rule violations`
+        )
+        .setFooter({ text: "Mention a user to kick them." });
+      return message.reply({ embeds: [kickGuideEmbed] });
+    };
 
-      await message.reply({ embeds: [successKickEmbed] });
-    } catch (error) {
-      console.error("Error in kick command:", error);
-      const errorKickEmbed = errorEmbed(
-        "An error occurred while trying to kick the user."
-      );
-      await message.reply({ embeds: [errorKickEmbed] });
+    if (!args[0] || !/^<@!?\d+>$/.test(args[0]) || !mentionedUser) {
+      return await sendKickGuide();
     }
+
+    if (mentionedUser.id === message.author.id) {
+      return await message.reply({
+        embeds: [errorEmbed("You cannot kick yourself bro.")]
+      });
+    }
+
+    if (
+      message.author.id !== message.guild.ownerId &&
+      message.member.roles.highest.position <=
+        mentionedUser.roles.highest.position
+    ) {
+      return await message.reply({
+        embeds: [
+          errorEmbed(
+            "You cannot kick a member with an equal or higher role than yours."
+          )
+        ]
+      });
+    }
+
+    if (!mentionedUser.kickable) {
+      const cantKickEmbed = new EmbedBuilder()
+        .setTitle("<:cross:1310179339005988945>  Unsuccessful")
+        .setColor(0xff0320)
+        .setDescription("User is immune, can't kick.");
+      return await message.reply({ embeds: [cantKickEmbed] });
+    }
+
+    const reason = args.slice(1).join(" ") || "No reason provided";
+    await mentionedUser.kick(reason);
+
+    const successKickEmbed = new EmbedBuilder()
+      .setTitle("<:tick:1310179325152067676>  Success")
+      .setColor(0x54ff32)
+      .setDescription(
+        `**Successfully kicked <@${mentionedUser.user.id}>.**\n\nReason: ${reason}.`
+      );
+
+    await message.reply({ embeds: [successKickEmbed] });
+  } catch (error) {
+    console.error("Error in kick command:", error);
+    const errorKickEmbed = errorEmbed(
+      "An error occurred while trying to kick the user."
+    );
+    await message.reply({ embeds: [errorKickEmbed] });
   }
 };
 

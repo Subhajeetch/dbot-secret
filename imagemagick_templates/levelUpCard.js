@@ -1,78 +1,95 @@
-const im = require("imagemagick");
+const { createCanvas, loadImage, registerFont } = require("canvas");
+const sharp = require("sharp");
+const path = require("path");
 const fs = require("fs");
 
-const levelUpCard = (options, callback) => {
-  const {
-    avatarPath,
-    currentExp,
-    maxExp,
-    username,
-    outputPath,
-    progress,
-  } = options;
+// Register custom fonts if present in the repo
+const semiBoldPath = path.resolve(__dirname, "../fonts/Poppins-SemiBold.ttf");
+const thinPath = path.resolve(__dirname, "../fonts/Poppins-Thin.ttf");
 
-  im.convert(
-    [
-      "-size", "1280x400", "gradient:#ff7f0f-#ff04ff", // Gradient background
-      "-gravity", "NorthWest",
+if (fs.existsSync(semiBoldPath)) {
+  registerFont(semiBoldPath, { family: "PoppinsSemiBold" });
+}
+if (fs.existsSync(thinPath)) {
+  registerFont(thinPath, { family: "PoppinsThin" });
+}
 
-      // Avatar background
-      "-fill", "#353535",
-      "-draw", "roundrectangle 40,40 280,280 20,20",
+const levelUpCard = async ({
+  avatarBuffer,
+  currentExp,
+  maxExp,
+  username,
+  progress
+}) => {
+  const width = 1280;
+  const height = 400;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
 
-      // Draw the avatar
-      "-fill", "white",
-      "-draw", `image over 60,60 200,200 '${avatarPath}'`,
+  // Gradient background (#ff7f0f to #ff04ff)
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "#ff7f0f");
+  gradient.addColorStop(1, "#ff04ff");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
 
-      // Draw the username
-      "-font", "fonts/Poppins-SemiBold.ttf",
-      "-pointsize", "58",
-      "-fill", "#353535",
-      "-stroke", "#353535",
-      "-strokewidth", "1",
-      "-draw", `text 300,66 '${username.toUpperCase()}'`,
+  // Avatar background rounded rectangle
+  ctx.fillStyle = "#353535";
+  ctx.beginPath();
+  ctx.roundRect(40, 40, 240, 240, 20);
+  ctx.fill();
 
-      // Draw a rectangle
-      "-stroke", "#353535",
-      "-strokewidth", "1",
-      "-fill", "#353535",
-      "-draw", "rectangle 300,138 700,143",
+  // Draw avatar
+  if (avatarBuffer) {
+    const pngAvatar = await sharp(avatarBuffer)
+      .resize(200, 200)
+      .png()
+      .toBuffer();
+    const avatarImg = await loadImage(pngAvatar);
+    ctx.drawImage(avatarImg, 60, 60, 200, 200);
+  }
 
-      // Draw level
-      "-pointsize", "40",
-      "-draw", `text 300,200 'Level: 24'`,
+  // Draw username
+  const mainFont = fs.existsSync(semiBoldPath) ? "PoppinsSemiBold" : "Arial";
+  const footerFont = fs.existsSync(thinPath) ? "PoppinsThin" : "Arial";
 
-      // Draw experience
-      "-draw", `text 550,200 'EXP: ${(Math.round(currentExp) / 1000).toFixed(1)}k/${(Math.round(maxExp) / 1000).toFixed(1)}k'`,
+  ctx.fillStyle = "#353535";
+  ctx.font = `bold 58px "${mainFont}"`;
+  ctx.fillText(username.toUpperCase(), 300, 105);
 
-      // Draw rank
-      "-draw", `text 900,200 'Rank: 17'`,
+  // Divider bar
+  ctx.fillRect(300, 138, 400, 5);
 
-      // Progress bar background
-      "-fill", "#353535",
-      "-strokewidth", "3",
-      "-draw", `roundrectangle 300,280 1070,322 10,10`,
-
-      // Progress bar foreground
-      "-fill", "#97FF01",
-      "-draw", `roundrectangle 300,280 ${300 + progress},322 10,10`,
-
-      // Footer text
-      "-font", "fonts/Poppins-Thin.ttf",
-      "-stroke", "black",
-      "-strokewidth", "1",
-      "-fill", "black",
-      "-pointsize", "24",
-      "-draw", `text 961,365 'Powered by @Animekun AI'`,
-
-      // Output file
-      outputPath,
-    ],
-    (err) => {
-      fs.unlinkSync(avatarPath); // Clean up the avatar file
-      callback(err); // Pass the error (if any) to the callback
-    }
+  // Stats text
+  ctx.font = `bold 40px "${mainFont}"`;
+  ctx.fillText("Level: 24", 300, 205);
+  ctx.fillText(
+    `EXP: ${(Math.round(currentExp) / 1000).toFixed(1)}k/${(
+      Math.round(maxExp) / 1000
+    ).toFixed(1)}k`,
+    550,
+    205
   );
+  ctx.fillText("Rank: 17", 900, 205);
+
+  // Progress bar background
+  ctx.fillStyle = "#353535";
+  ctx.beginPath();
+  ctx.roundRect(300, 280, 770, 42, 10);
+  ctx.fill();
+
+  // Progress bar foreground
+  ctx.fillStyle = "#97FF01";
+  ctx.beginPath();
+  ctx.roundRect(300, 280, Math.max(20, Math.min(770, progress)), 42, 10);
+  ctx.fill();
+
+  // Footer text
+  ctx.fillStyle = "#000000";
+  ctx.font = `24px "${footerFont}"`;
+  ctx.fillText("Powered by @Animekun AI", 940, 365);
+
+  return canvas.toBuffer("image/png");
 };
 
 module.exports = levelUpCard;

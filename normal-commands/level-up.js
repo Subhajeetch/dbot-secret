@@ -1,10 +1,10 @@
-const fs = require("fs");
+const { AttachmentBuilder } = require("discord.js");
 const axios = require("axios");
 const levelUpCard = require("../imagemagick_templates/levelUpCard.js");
-const serverPrifix = require("../prifix.js");
+const serverPrefix = require("../prifix.js");
 
-const levelUp = async (message) => {
-  if (message.content === `${serverPrifix}lv`) {
+const levelUp = async message => {
+  if (message.content.trim() === `${serverPrefix}lv`) {
     try {
       const currentExp = 1400;
       const maxExp = 8500;
@@ -12,43 +12,32 @@ const levelUp = async (message) => {
       const progress = (percentage / 100) * 770;
 
       const avatarURL = message.author.displayAvatarURL({
-        format: "png",
-        size: 128,
+        extension: "png",
+        size: 256,
+        forceStatic: true
       });
 
-      const response = await axios({
-        url: avatarURL,
+      const response = await axios.get(avatarURL, {
         responseType: "arraybuffer",
+        timeout: 8000
       });
 
-      const avatarPath = "avatar.png";
-      fs.writeFileSync(avatarPath, response.data);
+      const cardBuffer = await levelUpCard({
+        avatarBuffer: Buffer.from(response.data),
+        currentExp,
+        maxExp,
+        username: message.author.username,
+        progress
+      });
 
-      const outputPath = "ping.png";
+      const attachment = new AttachmentBuilder(cardBuffer, {
+        name: "level-up.png"
+      });
 
-      // Call generateImage with options and handle the callback
-      levelUpCard(
-        {
-          avatarPath,
-          currentExp,
-          maxExp,
-          username: message.author.username,
-          outputPath,
-          progress,
-        },
-        (err) => {
-          if (err) {
-            console.error("Error generating image:", err);
-            message.reply("Failed to generate the image.");
-            return;
-          }
-
-          message.reply({ files: [outputPath] });
-        }
-      );
+      await message.reply({ files: [attachment] });
     } catch (error) {
-      console.error("Error:", error);
-      message.reply("Failed to process your request.");
+      console.error("Error generating level-up card:", error);
+      await message.reply("Failed to generate the level-up image.");
     }
   }
 };
