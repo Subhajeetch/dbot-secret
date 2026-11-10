@@ -1,6 +1,11 @@
+const dns = require("dns");
+// Fix Node 24 IPv6 connection hangs on Render containers
+dns.setDefaultResultOrder("ipv4first");
+
 require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const express = require("express");
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
@@ -86,7 +91,6 @@ client.on("messageCreate", async message => {
   if (message.author.bot || !message.guild) return;
 
   try {
-    // AFK checks first (ignore if the user is currently running ?afk)
     const isAfkCmd =
       message.content === `${serverPrefix}afk` ||
       message.content.startsWith(`${serverPrefix}afk `);
@@ -159,15 +163,19 @@ app.get("/health", (req, res) => {
 
 app.listen(PORT, () => console.log(`Server Started! Port: ${PORT}`));
 
-// Log Discord REST rate limits and gateway issues
+// Log all REST and Gateway events until the bot is ready
+let isBotReady = false;
+
 client.rest.on("rateLimited", info => {
-  console.warn(`⚠️ Discord API Rate Limited:Path=${info.route} | Timeout=${info.timeToReset}ms | Global=${info.global}`);
+  console.warn(`⚠️ Discord API Rate Limited: Path=${info.route} | Timeout=${info.timeToReset}ms | Global=${info.global}`);
+});
+
+client.rest.on("restDebug", info => {
+  if (!isBotReady) console.log(`[REST Debug] ${info}`);
 });
 
 client.on("debug", info => {
-  if (info.includes("429") || info.includes("Session Limit") || info.includes("Connecting to")) {
-    console.log(`[Discord Debug] ${info}`);
-  }
+  if (!isBotReady) console.log(`[Gateway Debug] ${info}`);
 });
 
 client.on("error", err => {
@@ -175,12 +183,11 @@ client.on("error", err => {
 });
 
 client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  // botStatusChangeTime = 1 minute, botIconChangeHours = 6 hours
+  isBotReady = true;
+  console.log(`✅ Logged in as ${client.user.tag}`);
   startTasks(client, 1, 6);
 });
 
-// Prevent unhandled errors from crashing the Render instance
 process.on("unhandledRejection", err => {
   console.error("Unhandled Promise Rejection:", err);
 });
@@ -189,12 +196,48 @@ process.on("uncaughtException", err => {
   console.error("Uncaught Exception:", err);
 });
 
-// Verify TOKEN and initiate Discord login
-if (!process.env.TOKEN) {
-  console.error("❌ ERROR: Missing TOKEN environment variable! Add TOKEN in Render -> Environment.");
-} else {
+// Pre-flight check + login
+async function connectBot() {
+  const token = process.env.TOKEN ? process.env.TOKEN.trim() : "";
+  if (!token) {
+    console.error("❌ ERROR: Missing TOKEN environment variable! Add TOKEN in Render -> Environment.");
+    return;
+  }
+
+  console.log("Running Discord Gateway pre-flight check...");
+  try {
+    const res = await axios.get("https://discord.com/api/v10/gateway/bot", {
+      headers: { Authorization: `Bot ${token}` },
+      timeout: 10000
+    });
+    const { remaining, total, reset_after } = res.data.session_start_limit;
+    console.log(
+      `✅ Discord API reachable! Sessions remaining: ${remaining}/${total} (resets in ${Math.round(reset_after / 1000)}s)`
+    );
+  } catch (err) {
+    if (err.response) {
+      const retryAfter = err.response.headers["retry-after"];
+      console.error(
+        `❌ Discord API blocked request! HTTP Status: ${err.response.status} | Retry-After: ${retryAfter || "unknown"} seconds`
+      );
+      if (err.response.status === 401) {
+        console.error("❌ Your Discord Bot TOKEN is invalid or was reset. Generate a new token in Discord Developer Portal.");
+        return;
+      }
+      if (err.response.status === 429) {
+        console.error(
+          "⚠️ Render's current shared IP is rate-limited by Discord/Cloudflare (HTTP 429). Wait for the Retry-After cooldown, or deploy in a different Render region (e.g., Singapore or Frankfurt) to get a fresh IP."
+        );
+      }
+    } else {
+      console.error("❌ Network error reaching Discord API:", err.message);
+    }
+  }
+
   console.log("Attempting to log in to Discord...");
-  client.login(process.env.TOKEN).catch(err => {
+  client.login(token).catch(err => {
     console.error("❌ Failed to login to Discord:", err);
   });
 }
+
+connectBot();

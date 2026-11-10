@@ -2,6 +2,9 @@
   "name": "discord-bot",
   "version": "1.0.0",
   "main": "bot.js",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "start": "node bot.js",
     "deploy": "node deploy-commands.js"
