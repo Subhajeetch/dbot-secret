@@ -82,9 +82,6 @@ try {
   console.error("Failed to load slash commands:", err);
 }
 
-const botIconChangeTime = 60; // 60 minutes (safe from Discord avatar rate limits)
-const botStatusChangeTime = 1; // 1 minute
-
 client.on("messageCreate", async message => {
   if (message.author.bot || !message.guild) return;
 
@@ -129,21 +126,29 @@ client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
   const command = client.slashCommands.get(interaction.commandName);
   if (!command) return;
+
   try {
     await command.execute(interaction);
   } catch (error) {
+    if (error.code === 10062 || error.rawError?.code === 10062) {
+      console.warn(`Interaction /${interaction.commandName} expired before response could be sent.`);
+      return;
+    }
+
     console.error(`Error executing /${interaction.commandName}:`, error);
     try {
-      if (interaction.replied || interaction.deferred) {
+      if (interaction.deferred && !interaction.replied) {
         await interaction.editReply("There was an error while executing this command.");
-      } else {
+      } else if (!interaction.replied) {
         await interaction.reply({
           content: "There was an error while executing this command.",
           ephemeral: true
         });
       }
     } catch (err) {
-      console.error("Failed to send error reply:", err);
+      if (err.code !== 10062 && err.rawError?.code !== 10062) {
+        console.error("Failed to send error reply:", err);
+      }
     }
   }
 });
@@ -154,9 +159,25 @@ app.get("/health", (req, res) => {
 
 app.listen(PORT, () => console.log(`Server Started! Port: ${PORT}`));
 
+// Log Discord REST rate limits and gateway issues
+client.rest.on("rateLimited", info => {
+  console.warn(`⚠️ Discord API Rate Limited:Path=${info.route} | Timeout=${info.timeToReset}ms | Global=${info.global}`);
+});
+
+client.on("debug", info => {
+  if (info.includes("429") || info.includes("Session Limit") || info.includes("Connecting to")) {
+    console.log(`[Discord Debug] ${info}`);
+  }
+});
+
+client.on("error", err => {
+  console.error("Discord Client Error:", err);
+});
+
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
-  startTasks(client, botStatusChangeTime, botIconChangeTime);
+  // botStatusChangeTime = 1 minute, botIconChangeHours = 6 hours
+  startTasks(client, 1, 6);
 });
 
 // Prevent unhandled errors from crashing the Render instance
@@ -168,4 +189,12 @@ process.on("uncaughtException", err => {
   console.error("Uncaught Exception:", err);
 });
 
-client.login(process.env.TOKEN);
+// Verify TOKEN and initiate Discord login
+if (!process.env.TOKEN) {
+  console.error("❌ ERROR: Missing TOKEN environment variable! Add TOKEN in Render -> Environment.");
+} else {
+  console.log("Attempting to log in to Discord...");
+  client.login(process.env.TOKEN).catch(err => {
+    console.error("❌ Failed to login to Discord:", err);
+  });
+}
