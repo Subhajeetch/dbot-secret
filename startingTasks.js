@@ -54,16 +54,41 @@ const statuses = [
 
 let currentAvatarIndex = 0;
 let currentStatusIndex = 0;
+let isAvatarChanging = false;
+let lastAvatarChange = 0;
+const MIN_AVATAR_COOLDOWN = 6 * 60 * 60 * 1000; // 6 hours (Discord strictly limits avatar changes)
 
 async function changeBotAvatar(client) {
+  if (isAvatarChanging) return;
+
+  // Prevent hitting Discord's strict avatar rate limit
+  if (Date.now() - lastAvatarChange < MIN_AVATAR_COOLDOWN) {
+    return;
+  }
+
+  isAvatarChanging = true;
   try {
     const avatarPath = path.resolve(__dirname, avatars[currentAvatarIndex]);
     currentAvatarIndex = (currentAvatarIndex + 1) % avatars.length;
 
-    if (!fs.existsSync(avatarPath)) return;
-    await client.user.setAvatar(fs.readFileSync(avatarPath));
+    if (!fs.existsSync(avatarPath)) {
+      isAvatarChanging = false;
+      return;
+    }
+
+    const imageBuffer = await fs.promises.readFile(avatarPath);
+    await client.user.setAvatar(imageBuffer);
+    lastAvatarChange = Date.now();
+    console.log("Successfully rotated bot avatar.");
   } catch (error) {
-    console.error("Failed to change bot avatar:", error.message);
+    if (error.rawError?.message?.includes("AVATAR_RATE_LIMIT") || error.message?.includes("AVATAR_RATE_LIMIT")) {
+      console.warn("Discord avatar rate limit active. Backing off for 6 hours.");
+      lastAvatarChange = Date.now(); // Back off to avoid spamming Discord
+    } else {
+      console.error("Failed to change bot avatar:", error.message);
+    }
+  } finally {
+    isAvatarChanging = false;
   }
 }
 
@@ -77,10 +102,13 @@ function changeStatus(client) {
   }
 }
 
-function startTasks(client, botStatusChangeTime = 1, botIconChangeTime = 60) {
+function startTasks(client, botStatusChangeTime = 1, botIconChangeHours = 6) {
+  // Start status activity rotation (every 1 minute)
   changeStatus(client);
-  setInterval(() => changeBotAvatar(client), botIconChangeTime * 60 * 1000);
   setInterval(() => changeStatus(client), botStatusChangeTime * 60 * 1000);
+
+  // Avatar rotation (every 6 hours)
+  setInterval(() => changeBotAvatar(client), botIconChangeHours * 60 * 60 * 1000);
 }
 
 module.exports = { changeBotAvatar, changeStatus, startTasks };
