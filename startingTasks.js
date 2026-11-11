@@ -56,7 +56,7 @@ let currentAvatarIndex = 0;
 let currentStatusIndex = 0;
 let isAvatarChanging = false;
 let lastAvatarChange = 0;
-const MIN_AVATAR_COOLDOWN = 6 * 60 * 60 * 1000; // 6 hours (Discord strictly limits avatar changes)
+const MIN_AVATAR_COOLDOWN = 9 * 60 * 60 * 1000; // 9 hours (Discord strictly limits avatar changes)
 
 async function changeBotAvatar(client) {
   if (isAvatarChanging) return;
