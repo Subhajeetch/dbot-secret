@@ -9,12 +9,12 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsc",
-    "prebuild": "pnpm run clean",
+    "prebuild": "npm run clean",
     "start": "node dist/bot.js",
     "dev": "tsx src/bot.ts",
     "deploy": "tsc && node dist/deploy-commands.js",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm run typecheck"
+    "test": "npm run typecheck"
   },
   "dependencies": {
     "axios": "^1.13.6",
@@ -31,12 +31,5 @@
     "@types/node": "^22.13.9",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "canvas",
-      "sharp",
-      "esbuild"
-    ]
   }
 }

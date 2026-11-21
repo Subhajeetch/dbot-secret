@@ -5,8 +5,10 @@ dist/
 # env
 .env
 
-# pnpm
-pnpm-debug.log*
+# npm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Database & Runtime State files
 usersAFK.json
