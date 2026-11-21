@@ -5,10 +5,14 @@ import { getRootAssetPath } from "../utils/paths";
 export interface GuildSettings {
   prefix: string;
   mainChannelId?: string;
+  serverName?: string; // Custom server name for onboarding DMs
   onboardingDmEnabled: boolean;
-  onboardingDmDelay: number; // in seconds, default: 59
+  onboardingDmDelay: number; // in seconds, default: 67
   welcomeReplyEnabled: boolean;
   welcomeReplyDelay: number; // in seconds, default: 7
+  mentionReplyEnabled: boolean; // default: true
+  mentionMessage?: string; // default: "Need Help? go here: {channel}"
+  mentionChannelId?: string; // target channel for mention reply, falls back to mainChannelId
 }
 
 export type GuildSettingsCache = Record<string, GuildSettings>;
@@ -34,10 +38,14 @@ export class SettingsService {
     return {
       prefix: config.defaultPrefix,
       mainChannelId: undefined,
+      serverName: undefined,
       onboardingDmEnabled: true,
-      onboardingDmDelay: 59,
+      onboardingDmDelay: 67,
       welcomeReplyEnabled: true,
       welcomeReplyDelay: 7,
+      mentionReplyEnabled: true,
+      mentionMessage: undefined,
+      mentionChannelId: undefined
     };
   }
 
@@ -68,7 +76,7 @@ export class SettingsService {
       await fs.promises.writeFile(
         this.filePath,
         JSON.stringify(this.cache, null, 2),
-        "utf-8",
+        "utf-8"
       );
     } catch (err) {
       console.error("Error saving guild settings file:", err);
@@ -80,7 +88,7 @@ export class SettingsService {
     if (existing) {
       return {
         ...this.getDefaultSettings(),
-        ...existing,
+        ...existing
       };
     }
     return this.getDefaultSettings();
@@ -93,12 +101,12 @@ export class SettingsService {
 
   public async updateSettings(
     guildId: string,
-    updates: Partial<GuildSettings>,
+    updates: Partial<GuildSettings>
   ): Promise<GuildSettings> {
     const current = this.getSettings(guildId);
     const updated: GuildSettings = {
       ...current,
-      ...updates,
+      ...updates
     };
     this.cache[guildId] = updated;
     await this.save();
@@ -109,51 +117,87 @@ export class SettingsService {
     await this.updateSettings(guildId, { prefix: prefix.trim() });
   }
 
-  public async setMainChannel(
-    guildId: string,
-    channelId: string,
-  ): Promise<void> {
+  public async setMainChannel(guildId: string, channelId: string): Promise<void> {
     await this.updateSettings(guildId, { mainChannelId: channelId });
   }
 
-  public async setOnboardingDelay(
-    guildId: string,
-    delaySeconds: number,
-  ): Promise<void> {
+  public async setServerName(guildId: string, serverName: string): Promise<void> {
+    await this.updateSettings(guildId, { serverName: serverName.trim() });
+  }
+
+  public async resetServerName(guildId: string): Promise<void> {
+    const current = this.getSettings(guildId);
+    const updated: GuildSettings = { ...current };
+    delete updated.serverName;
+    this.cache[guildId] = updated;
+    await this.save();
+  }
+
+  public async setOnboardingDelay(guildId: string, delaySeconds: number): Promise<void> {
     await this.updateSettings(guildId, {
-      onboardingDmDelay: Math.max(1, delaySeconds),
+      onboardingDmDelay: Math.max(1, delaySeconds)
     });
   }
 
-  public async toggleOnboarding(
-    guildId: string,
-    enabled?: boolean,
-  ): Promise<boolean> {
+  public async toggleOnboarding(guildId: string, enabled?: boolean): Promise<boolean> {
     const current = this.getSettings(guildId);
-    const nextState =
-      enabled !== undefined ? enabled : !current.onboardingDmEnabled;
+    const nextState = enabled !== undefined ? enabled : !current.onboardingDmEnabled;
     await this.updateSettings(guildId, { onboardingDmEnabled: nextState });
     return nextState;
   }
 
-  public async setWelcomeDelay(
-    guildId: string,
-    delaySeconds: number,
-  ): Promise<void> {
+  public async setWelcomeDelay(guildId: string, delaySeconds: number): Promise<void> {
     await this.updateSettings(guildId, {
-      welcomeReplyDelay: Math.max(1, delaySeconds),
+      welcomeReplyDelay: Math.max(1, delaySeconds)
     });
   }
 
-  public async toggleWelcome(
-    guildId: string,
-    enabled?: boolean,
-  ): Promise<boolean> {
+  public async toggleWelcome(guildId: string, enabled?: boolean): Promise<boolean> {
     const current = this.getSettings(guildId);
-    const nextState =
-      enabled !== undefined ? enabled : !current.welcomeReplyEnabled;
+    const nextState = enabled !== undefined ? enabled : !current.welcomeReplyEnabled;
     await this.updateSettings(guildId, { welcomeReplyEnabled: nextState });
     return nextState;
+  }
+
+  public async toggleMentionReply(guildId: string, enabled?: boolean): Promise<boolean> {
+    const current = this.getSettings(guildId);
+    const nextState = enabled !== undefined ? enabled : !current.mentionReplyEnabled;
+    await this.updateSettings(guildId, { mentionReplyEnabled: nextState });
+    return nextState;
+  }
+
+  public async setMentionMessage(guildId: string, message: string): Promise<void> {
+    await this.updateSettings(guildId, { mentionMessage: message.trim() });
+  }
+
+  public async resetMentionMessage(guildId: string): Promise<void> {
+    const current = this.getSettings(guildId);
+    const updated: GuildSettings = { ...current };
+    delete updated.mentionMessage;
+    this.cache[guildId] = updated;
+    await this.save();
+  }
+
+  public async setMentionChannel(guildId: string, channelId: string): Promise<void> {
+    await this.updateSettings(guildId, { mentionChannelId: channelId });
+  }
+
+  public async resetMentionChannel(guildId: string): Promise<void> {
+    const current = this.getSettings(guildId);
+    const updated: GuildSettings = { ...current };
+    delete updated.mentionChannelId;
+    this.cache[guildId] = updated;
+    await this.save();
+  }
+
+  public getMentionReply(guildId: string): string {
+    const settings = this.getSettings(guildId);
+    const raw = settings.mentionMessage || "Need Help? go here: {channel}";
+    const channelTarget = settings.mentionChannelId || settings.mainChannelId;
+    const channelMention = channelTarget ? `<#${channelTarget}>` : "#general";
+    return raw
+      .replace(/\{channel\}/gi, channelMention)
+      .replace(/\{prefix\}/gi, settings.prefix || config.defaultPrefix);
   }
 }
 

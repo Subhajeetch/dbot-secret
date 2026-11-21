@@ -14,6 +14,7 @@ import afkPrefix from "../commands/prefix/utility/afk";
 import colorPrefix from "../commands/prefix/utility/color";
 import testWelcomePrefix from "../commands/prefix/utility/testWelcome";
 import testOnboardingPrefix from "../commands/prefix/utility/testOnboarding";
+import testMentionPrefix from "../commands/prefix/utility/testMention";
 import simulateJoinPrefix from "../commands/prefix/utility/simulateJoin";
 import avatarPrefix from "../commands/prefix/fun/avatar";
 import levelPrefix from "../commands/prefix/fun/level";
@@ -87,6 +88,7 @@ export class BotClient extends Client {
       colorPrefix,
       testWelcomePrefix,
       testOnboardingPrefix,
+      testMentionPrefix,
       simulateJoinPrefix,
       avatarPrefix,
       levelPrefix,

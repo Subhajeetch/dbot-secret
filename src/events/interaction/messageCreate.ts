@@ -1,8 +1,8 @@
-import { Events, Message } from "discord.js";
+import { Events, Message, EmbedBuilder } from "discord.js";
 import { BotEvent } from "../../core/types";
 import { settingsService } from "../../services/settings.service";
 import { afkService } from "../../services/afk.service";
-import { errorEmbed } from "../../utils/embeds";
+import { errorEmbed, INVISIBLE_COLOR } from "../../utils/embeds";
 
 export const messageCreateEvent: BotEvent<Events.MessageCreate> = {
   name: Events.MessageCreate,
@@ -10,6 +10,7 @@ export const messageCreateEvent: BotEvent<Events.MessageCreate> = {
     if (message.author.bot || !message.guild) return;
 
     try {
+      const settings = settingsService.getSettings(message.guild.id);
       const prefix = settingsService.getPrefix(message.guild.id);
 
       const isAfkCmd =
@@ -22,6 +23,24 @@ export const messageCreateEvent: BotEvent<Events.MessageCreate> = {
       // If author was AFK, welcome them back unless they are setting AFK
       if (!isAfkCmd) {
         await afkService.checkAfkReturn(message);
+      }
+
+      // Check if bot was directly mentioned (and not executing a prefix command)
+      const isBotMentioned =
+        !!client.user &&
+        message.mentions.users.has(client.user.id) &&
+        (message.content.includes(`<@${client.user.id}>`) ||
+          message.content.includes(`<@!${client.user.id}>`));
+
+      if (isBotMentioned && !message.content.startsWith(prefix)) {
+        if (settings.mentionReplyEnabled) {
+          const replyText = settingsService.getMentionReply(message.guild.id);
+          const replyEmbed = new EmbedBuilder()
+            .setColor(INVISIBLE_COLOR)
+            .setDescription(replyText);
+          await message.reply({ embeds: [replyEmbed] });
+          return;
+        }
       }
 
       // If message doesn't start with prefix, ignore
