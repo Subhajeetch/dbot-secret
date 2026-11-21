@@ -67,9 +67,9 @@ export const guildMemberAddEvent: BotEvent<Events.GuildMemberAdd> = {
       }, welcomeDelayMs);
     }
 
-    // 2. Onboarding DM to Member (default 67 seconds)
+    // 2. Onboarding DM to Member (default 59 seconds)
     if (settings.onboardingDmEnabled) {
-      const dmDelayMs = (settings.onboardingDmDelay || 67) * 1000;
+      const dmDelayMs = (settings.onboardingDmDelay || 59) * 1000;
       setTimeout(async () => {
         // Re-check member in guild
         if (!member.guild.members.cache.has(member.id)) return;

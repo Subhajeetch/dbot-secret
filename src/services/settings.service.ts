@@ -7,7 +7,7 @@ export interface GuildSettings {
   mainChannelId?: string;
   serverName?: string; // Custom server name for onboarding DMs
   onboardingDmEnabled: boolean;
-  onboardingDmDelay: number; // in seconds, default: 67
+  onboardingDmDelay: number; // in seconds, default: 59
   welcomeReplyEnabled: boolean;
   welcomeReplyDelay: number; // in seconds, default: 7
   mentionReplyEnabled: boolean; // default: true
@@ -40,7 +40,7 @@ export class SettingsService {
       mainChannelId: undefined,
       serverName: undefined,
       onboardingDmEnabled: true,
-      onboardingDmDelay: 67,
+      onboardingDmDelay: 59,
       welcomeReplyEnabled: true,
       welcomeReplyDelay: 7,
       mentionReplyEnabled: true,

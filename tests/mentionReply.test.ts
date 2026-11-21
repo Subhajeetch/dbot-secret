@@ -11,6 +11,7 @@ async function runTests() {
   assert.strictEqual(defaults.mentionReplyEnabled, true, "Default mentionReplyEnabled should be true");
   assert.strictEqual(defaults.mentionMessage, undefined, "Default mentionMessage should be undefined");
   assert.strictEqual(defaults.mentionChannelId, undefined, "Default mentionChannelId should be undefined");
+  assert.strictEqual(defaults.onboardingDmDelay, 59, "Default onboardingDmDelay should be 59 seconds");
 
   // Test 2: Default mention reply format with no channel
   let reply = settingsService.getMentionReply(testGuildId);

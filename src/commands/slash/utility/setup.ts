@@ -92,7 +92,7 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
         `Sends a friendly private message to new members after they join.\n\n` +
           `**Status:** ${settings.onboardingDmEnabled ? "Enabled" : "Disabled"}\n` +
           `**Server Name:** ${serverNameLabel}\n` +
-          `**Delay:** ${settings.onboardingDmDelay} seconds (Default: 67s)\n` +
+          `**Delay:** ${settings.onboardingDmDelay} seconds (Default: 59s)\n` +
           `**Channel Link Status:** ${
             settings.mainChannelId
               ? `<#${settings.mainChannelId}>`
@@ -418,7 +418,7 @@ export const setupSlashCommand: SlashCommand = {
             .setCustomId("input_onboarding_delay")
             .setLabel("Delay in Seconds (1 - 3600)")
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder("e.g. 67")
+            .setPlaceholder("e.g. 59")
             .setMaxLength(5)
             .setRequired(true);
 
@@ -459,12 +459,13 @@ export const setupSlashCommand: SlashCommand = {
             .setTitle("Set Server Name for Onboarding");
 
           const currentSettings = settingsService.getSettings(guildId);
+          const initialServerName = (currentSettings.serverName || guildName).slice(0, 100);
           const serverNameInput = new TextInputBuilder()
             .setCustomId("input_server_name")
-            .setLabel("Server Name (Max 60 chars)")
+            .setLabel("Server Name (Max 100 chars)")
             .setStyle(TextInputStyle.Short)
-            .setValue(currentSettings.serverName || guildName)
-            .setMaxLength(60)
+            .setValue(initialServerName)
+            .setMaxLength(100)
             .setMinLength(1)
             .setRequired(true);
 
@@ -564,11 +565,12 @@ export const setupSlashCommand: SlashCommand = {
             .setCustomId("modal_set_mention_msg")
             .setTitle("Set Mention Reply Message");
 
+          const initialMentionMsg = (currentSettings.mentionMessage || "Need Help? go here: {channel}").slice(0, 500);
           const msgInput = new TextInputBuilder()
             .setCustomId("input_mention_msg")
             .setLabel("Reply Message (Use {channel} for channel)")
             .setStyle(TextInputStyle.Paragraph)
-            .setValue(currentSettings.mentionMessage || "Need Help? go here: {channel}")
+            .setValue(initialMentionMsg)
             .setMaxLength(500)
             .setMinLength(1)
             .setRequired(true);
