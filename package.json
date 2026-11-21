@@ -1,13 +1,20 @@
 {
   "name": "discord-bot",
   "version": "1.0.0",
-  "main": "bot.js",
+  "description": "Discord Bot in TypeScript",
+  "main": "dist/bot.js",
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "start": "node bot.js",
-    "deploy": "node deploy-commands.js"
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "prebuild": "pnpm run clean",
+    "start": "node dist/bot.js",
+    "dev": "tsx src/bot.ts",
+    "deploy": "tsc && node dist/deploy-commands.js",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run typecheck"
   },
   "dependencies": {
     "axios": "^1.13.6",
@@ -17,5 +24,19 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "canvas",
+      "sharp",
+      "esbuild"
+    ]
   }
 }

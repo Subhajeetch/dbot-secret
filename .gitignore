@@ -1,5 +1,14 @@
 # Node.js
 node_modules/
+dist/
 
 # env
 .env
+
+# pnpm
+pnpm-debug.log*
+
+# Database & Runtime State files
+usersAFK.json
+guildSettings.json
+*.json.bak
