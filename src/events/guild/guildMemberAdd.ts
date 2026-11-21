@@ -5,12 +5,13 @@ import { getRandomWelcomeMessage } from "../../config/welcomeMessages";
 
 export async function sendOnboardingDm(
   member: GuildMember,
-  mainChannelId: string
+  mainChannelId: string,
 ): Promise<boolean> {
   try {
     const settings = settingsService.getSettings(member.guild.id);
-    const serverName = settings.serverName || member.guild?.name || "the server";
-    const content = `Thanks for joining ${serverName}. Dont hasitate to chat here: <#${mainChannelId}>. we don't bite dw :)`;
+    const serverName =
+      settings.serverName || member.guild?.name || "the server";
+    const content = `Thanks for joining **${serverName}**. Dont hasitate to chat here: <#${mainChannelId}>. we don't bite dw :)`;
     await member.send({ content });
     return true;
   } catch (error) {
@@ -21,7 +22,7 @@ export async function sendOnboardingDm(
 
 export async function sendWelcomeReply(
   member: GuildMember,
-  mainChannelId: string
+  mainChannelId: string,
 ): Promise<boolean> {
   try {
     const channel =
@@ -35,7 +36,7 @@ export async function sendWelcomeReply(
     const message = getRandomWelcomeMessage(member.id);
     await channel.send({
       content: message,
-      allowedMentions: { users: [member.id] }
+      allowedMentions: { users: [member.id] },
     });
     return true;
   } catch (error) {
@@ -76,7 +77,7 @@ export const guildMemberAddEvent: BotEvent<Events.GuildMemberAdd> = {
         await sendOnboardingDm(member, mainChannelId);
       }, dmDelayMs);
     }
-  }
+  },
 };
 
 export default guildMemberAddEvent;

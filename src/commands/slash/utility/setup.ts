@@ -12,14 +12,22 @@ import {
   SlashCommandBuilder,
   TextChannel,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
 } from "discord.js";
 import { SlashCommand } from "../../../core/types";
 import { config } from "../../../config";
 import { settingsService } from "../../../services/settings.service";
-import { errorEmbed, successEmbed, INVISIBLE_COLOR } from "../../../utils/embeds";
+import {
+  errorEmbed,
+  successEmbed,
+  INVISIBLE_COLOR,
+} from "../../../utils/embeds";
 
-function renderSetupPage(guildId: string, page: number, guildName = "the server"): {
+function renderSetupPage(
+  guildId: string,
+  page: number,
+  guildName = "the server",
+): {
   embed: EmbedBuilder;
   components: ActionRowBuilder<MessageActionRowComponentBuilder>[];
 } {
@@ -34,7 +42,7 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
         `Configure the prefix used for text-based commands in this server.\n\n` +
           `**Current Prefix:** \`${settings.prefix}\`\n` +
           `**Default Prefix:** \`${config.defaultPrefix}\`\n\n` +
-          `Click below to set a custom prefix or reset back to default.`
+          `Click below to set a custom prefix or reset back to default.`,
       );
 
     const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -46,9 +54,11 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
         .setCustomId("setup_btn_reset_prefix")
         .setLabel("Reset to Default")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(settings.prefix === config.defaultPrefix)
+        .setDisabled(settings.prefix === config.defaultPrefix),
     );
-    components.push(actionRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
+    components.push(
+      actionRow as ActionRowBuilder<MessageActionRowComponentBuilder>,
+    );
   } else if (page === 2) {
     const channelDisplay = settings.mainChannelId
       ? `<#${settings.mainChannelId}>`
@@ -59,24 +69,29 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
       .setDescription(
         `Set the primary chat channel. This channel is linked in onboarding DMs and used for sending welcome replies.\n\n` +
           `**Current Main Channel:** ${channelDisplay}\n\n` +
-          `Select a text channel from the menu below or enter a channel ID manually.`
+          `Select a text channel from the menu below or enter a channel ID manually.`,
       );
 
-    const selectMenuRow = new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
-      new ChannelSelectMenuBuilder()
-        .setCustomId("setup_select_channel")
-        .setPlaceholder("Select a text channel...")
-        .setChannelTypes(ChannelType.GuildText)
+    const selectMenuRow =
+      new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
+        new ChannelSelectMenuBuilder()
+          .setCustomId("setup_select_channel")
+          .setPlaceholder("Select a text channel...")
+          .setChannelTypes(ChannelType.GuildText),
+      );
+    components.push(
+      selectMenuRow as ActionRowBuilder<MessageActionRowComponentBuilder>,
     );
-    components.push(selectMenuRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
 
     const manualBtnRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId("setup_btn_manual_channel")
         .setLabel("Enter Channel ID Manually")
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Secondary),
     );
-    components.push(manualBtnRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
+    components.push(
+      manualBtnRow as ActionRowBuilder<MessageActionRowComponentBuilder>,
+    );
   } else if (page === 3) {
     const channelLink = settings.mainChannelId
       ? `<#${settings.mainChannelId}>`
@@ -99,14 +114,22 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
               : "⚠️ Main channel not configured yet"
           }\n\n` +
           `**Message Preview:**\n` +
-          `> Thanks for joining ${currentServerName}. Dont hasitate to chat here: ${channelLink}. we don't bite dw :)`
+          `> Thanks for joining **${currentServerName}**. Dont hasitate to chat here: ${channelLink}. we don't bite dw :)`,
       );
 
     const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId("setup_btn_toggle_onboarding")
-        .setLabel(settings.onboardingDmEnabled ? "Disable Onboarding" : "Enable Onboarding")
-        .setStyle(settings.onboardingDmEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
+        .setLabel(
+          settings.onboardingDmEnabled
+            ? "Disable Onboarding"
+            : "Enable Onboarding",
+        )
+        .setStyle(
+          settings.onboardingDmEnabled
+            ? ButtonStyle.Danger
+            : ButtonStyle.Success,
+        ),
       new ButtonBuilder()
         .setCustomId("setup_btn_set_onboarding_delay")
         .setLabel("Change Delay")
@@ -119,9 +142,11 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
         .setCustomId("setup_btn_reset_server_name")
         .setLabel("Reset Name")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(!settings.serverName)
+        .setDisabled(!settings.serverName),
     );
-    components.push(actionRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
+    components.push(
+      actionRow as ActionRowBuilder<MessageActionRowComponentBuilder>,
+    );
   } else if (page === 4) {
     embed
       .setTitle("Server Setup (4/5) • Welcome Reply")
@@ -137,26 +162,38 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
           `**Message Samples (Selected Randomly):**\n` +
           `• @user hi..\n` +
           `• @user hey.. welcome :)\n` +
-          `• @user hello there!`
+          `• @user hello there!`,
       );
 
     const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId("setup_btn_toggle_welcome")
-        .setLabel(settings.welcomeReplyEnabled ? "Disable Welcome Reply" : "Enable Welcome Reply")
-        .setStyle(settings.welcomeReplyEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
+        .setLabel(
+          settings.welcomeReplyEnabled
+            ? "Disable Welcome Reply"
+            : "Enable Welcome Reply",
+        )
+        .setStyle(
+          settings.welcomeReplyEnabled
+            ? ButtonStyle.Danger
+            : ButtonStyle.Success,
+        ),
       new ButtonBuilder()
         .setCustomId("setup_btn_set_welcome_delay")
         .setLabel("Change Delay")
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Primary),
     );
-    components.push(actionRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
+    components.push(
+      actionRow as ActionRowBuilder<MessageActionRowComponentBuilder>,
+    );
   } else if (page === 5) {
-    const currentChannelId = settings.mentionChannelId || settings.mainChannelId;
+    const currentChannelId =
+      settings.mentionChannelId || settings.mainChannelId;
     const channelDisplay = currentChannelId
       ? `<#${currentChannelId}>`
       : "⚠️ Not configured (Will display `#general`)";
-    const customMsg = settings.mentionMessage || "Need Help? go here: {channel}";
+    const customMsg =
+      settings.mentionMessage || "Need Help? go here: {channel}";
     const preview = settingsService.getMentionReply(guildId);
 
     embed
@@ -167,14 +204,22 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
           `**Help / Target Channel:** ${channelDisplay}\n` +
           `**Message Template:**\n\`${customMsg}\`\n\n` +
           `**Message Preview:**\n> ${preview}\n\n` +
-          `*Tip: Use \`{channel}\` to automatically insert the target channel link, or write any custom text you want.*`
+          `*Tip: Use \`{channel}\` to automatically insert the target channel link, or write any custom text you want.*`,
       );
 
     const actionRow1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId("setup_btn_toggle_mention")
-        .setLabel(settings.mentionReplyEnabled ? "Disable Mention Reply" : "Enable Mention Reply")
-        .setStyle(settings.mentionReplyEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
+        .setLabel(
+          settings.mentionReplyEnabled
+            ? "Disable Mention Reply"
+            : "Enable Mention Reply",
+        )
+        .setStyle(
+          settings.mentionReplyEnabled
+            ? ButtonStyle.Danger
+            : ButtonStyle.Success,
+        ),
       new ButtonBuilder()
         .setCustomId("setup_btn_set_mention_msg")
         .setLabel("Set Message")
@@ -183,17 +228,25 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
         .setCustomId("setup_btn_reset_mention_msg")
         .setLabel("Reset Message")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(!settings.mentionMessage || settings.mentionMessage === "Need Help? go here: {channel}")
+        .setDisabled(
+          !settings.mentionMessage ||
+            settings.mentionMessage === "Need Help? go here: {channel}",
+        ),
     );
-    components.push(actionRow1 as ActionRowBuilder<MessageActionRowComponentBuilder>);
+    components.push(
+      actionRow1 as ActionRowBuilder<MessageActionRowComponentBuilder>,
+    );
 
-    const selectMenuRow = new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
-      new ChannelSelectMenuBuilder()
-        .setCustomId("setup_select_mention_channel")
-        .setPlaceholder("Select a help / target channel...")
-        .setChannelTypes(ChannelType.GuildText)
+    const selectMenuRow =
+      new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
+        new ChannelSelectMenuBuilder()
+          .setCustomId("setup_select_mention_channel")
+          .setPlaceholder("Select a help / target channel...")
+          .setChannelTypes(ChannelType.GuildText),
+      );
+    components.push(
+      selectMenuRow as ActionRowBuilder<MessageActionRowComponentBuilder>,
     );
-    components.push(selectMenuRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
 
     const actionRow2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
@@ -204,9 +257,11 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
         .setCustomId("setup_btn_reset_mention_channel")
         .setLabel("Use Main Channel")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(!settings.mentionChannelId)
+        .setDisabled(!settings.mentionChannelId),
     );
-    components.push(actionRow2 as ActionRowBuilder<MessageActionRowComponentBuilder>);
+    components.push(
+      actionRow2 as ActionRowBuilder<MessageActionRowComponentBuilder>,
+    );
   }
 
   // Navigation Row
@@ -229,7 +284,7 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
     new ButtonBuilder()
       .setCustomId("setup_btn_done")
       .setLabel("Done")
-      .setStyle(ButtonStyle.Success)
+      .setStyle(ButtonStyle.Success),
   );
   components.push(navRow as ActionRowBuilder<MessageActionRowComponentBuilder>);
 
@@ -239,17 +294,25 @@ function renderSetupPage(guildId: string, page: number, guildName = "the server"
 export const setupSlashCommand: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName("setup")
-    .setDescription("Configure server prefix, main channel, onboarding, welcome, and bot mention reply")
+    .setDescription(
+      "Configure server prefix, main channel, onboarding, welcome, and bot mention reply",
+    )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .setDMPermission(false),
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild || !interaction.member) return;
 
-    if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+    if (
+      !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)
+    ) {
       return interaction.reply({
-        embeds: [errorEmbed("You need Administrator permissions to use the setup command.")],
-        ephemeral: true
+        embeds: [
+          errorEmbed(
+            "You need Administrator permissions to use the setup command.",
+          ),
+        ],
+        ephemeral: true,
       });
     }
 
@@ -260,27 +323,27 @@ export const setupSlashCommand: SlashCommand = {
     const initial = renderSetupPage(guildId, currentPage, guildName);
     await interaction.reply({
       embeds: [initial.embed],
-      components: initial.components
+      components: initial.components,
     });
     const response = await interaction.fetchReply();
 
     const collector = response.createMessageComponentCollector({
-      filter: i => i.user.id === interaction.user.id,
-      time: 600000 // 10 minutes active
+      filter: (i) => i.user.id === interaction.user.id,
+      time: 600000, // 10 minutes active
     });
 
-    collector.on("collect", async i => {
+    collector.on("collect", async (i) => {
       try {
         // Done: finish setup, remove all buttons, show success embed
         if (i.customId === "setup_btn_done") {
           collector.stop("done");
           const doneEmbed = successEmbed(
             "Setup completed successfully. All server configurations have been applied and saved.",
-            "Success"
+            "Success",
           );
           await i.update({
             embeds: [doneEmbed],
-            components: []
+            components: [],
           });
           return;
         }
@@ -289,7 +352,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_nav_prev") {
           currentPage = Math.max(1, currentPage - 1);
           const nextState = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [nextState.embed], components: nextState.components });
+          await i.update({
+            embeds: [nextState.embed],
+            components: nextState.components,
+          });
           return;
         }
 
@@ -297,7 +363,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_nav_next") {
           currentPage = Math.min(5, currentPage + 1);
           const nextState = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [nextState.embed], components: nextState.components });
+          await i.update({
+            embeds: [nextState.embed],
+            components: nextState.components,
+          });
           return;
         }
 
@@ -316,22 +385,30 @@ export const setupSlashCommand: SlashCommand = {
             .setMinLength(1)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(prefixInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(prefixInput),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_change_prefix" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_change_prefix" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const newPrefix = modalSubmit.fields.getTextInputValue("input_prefix").trim();
+            const newPrefix = modalSubmit.fields
+              .getTextInputValue("input_prefix")
+              .trim();
             await modalSubmit.deferUpdate();
             await settingsService.setPrefix(guildId, newPrefix);
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -341,7 +418,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_reset_prefix") {
           await settingsService.setPrefix(guildId, config.defaultPrefix);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -350,7 +430,10 @@ export const setupSlashCommand: SlashCommand = {
           const selectedChannelId = i.values[0];
           await settingsService.setMainChannel(guildId, selectedChannelId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -368,23 +451,41 @@ export const setupSlashCommand: SlashCommand = {
             .setMaxLength(25)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(channelInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(
+              channelInput,
+            ),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_channel_id" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_channel_id" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const rawChannelId = modalSubmit.fields.getTextInputValue("input_channel_id").replace(/[<#>]/g, "").trim();
-            const channel = interaction.guild?.channels.cache.get(rawChannelId) ||
-              (await interaction.guild?.channels.fetch(rawChannelId).catch(() => null));
+            const rawChannelId = modalSubmit.fields
+              .getTextInputValue("input_channel_id")
+              .replace(/[<#>]/g, "")
+              .trim();
+            const channel =
+              interaction.guild?.channels.cache.get(rawChannelId) ||
+              (await interaction.guild?.channels
+                .fetch(rawChannelId)
+                .catch(() => null));
 
             if (!channel || !(channel instanceof TextChannel)) {
               await modalSubmit.reply({
-                embeds: [errorEmbed("Invalid channel ID or not a text channel in this server.")],
-                ephemeral: true
+                embeds: [
+                  errorEmbed(
+                    "Invalid channel ID or not a text channel in this server.",
+                  ),
+                ],
+                ephemeral: true,
               });
               return;
             }
@@ -394,7 +495,7 @@ export const setupSlashCommand: SlashCommand = {
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -404,7 +505,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_toggle_onboarding") {
           await settingsService.toggleOnboarding(guildId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -422,21 +526,33 @@ export const setupSlashCommand: SlashCommand = {
             .setMaxLength(5)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(delayInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(delayInput),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_onboarding_delay" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_onboarding_delay" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const rawVal = modalSubmit.fields.getTextInputValue("input_onboarding_delay").trim();
+            const rawVal = modalSubmit.fields
+              .getTextInputValue("input_onboarding_delay")
+              .trim();
             const seconds = parseInt(rawVal, 10);
             if (isNaN(seconds) || seconds < 1 || seconds > 3600) {
               await modalSubmit.reply({
-                embeds: [errorEmbed("Delay must be a valid number between 1 and 3600 seconds.")],
-                ephemeral: true
+                embeds: [
+                  errorEmbed(
+                    "Delay must be a valid number between 1 and 3600 seconds.",
+                  ),
+                ],
+                ephemeral: true,
               });
               return;
             }
@@ -446,7 +562,7 @@ export const setupSlashCommand: SlashCommand = {
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -459,7 +575,9 @@ export const setupSlashCommand: SlashCommand = {
             .setTitle("Set Server Name for Onboarding");
 
           const currentSettings = settingsService.getSettings(guildId);
-          const initialServerName = (currentSettings.serverName || guildName).slice(0, 100);
+          const initialServerName = (
+            currentSettings.serverName || guildName
+          ).slice(0, 100);
           const serverNameInput = new TextInputBuilder()
             .setCustomId("input_server_name")
             .setLabel("Server Name (Max 100 chars)")
@@ -469,22 +587,32 @@ export const setupSlashCommand: SlashCommand = {
             .setMinLength(1)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(serverNameInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(
+              serverNameInput,
+            ),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_set_server_name" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_set_server_name" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const newServerName = modalSubmit.fields.getTextInputValue("input_server_name").trim();
+            const newServerName = modalSubmit.fields
+              .getTextInputValue("input_server_name")
+              .trim();
             await modalSubmit.deferUpdate();
             await settingsService.setServerName(guildId, newServerName);
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -494,7 +622,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_reset_server_name") {
           await settingsService.resetServerName(guildId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -502,7 +633,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_toggle_welcome") {
           await settingsService.toggleWelcome(guildId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -520,21 +654,33 @@ export const setupSlashCommand: SlashCommand = {
             .setMaxLength(4)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(delayInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(delayInput),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_welcome_delay" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_welcome_delay" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const rawVal = modalSubmit.fields.getTextInputValue("input_welcome_delay").trim();
+            const rawVal = modalSubmit.fields
+              .getTextInputValue("input_welcome_delay")
+              .trim();
             const seconds = parseInt(rawVal, 10);
             if (isNaN(seconds) || seconds < 1 || seconds > 300) {
               await modalSubmit.reply({
-                embeds: [errorEmbed("Delay must be a valid number between 1 and 300 seconds.")],
-                ephemeral: true
+                embeds: [
+                  errorEmbed(
+                    "Delay must be a valid number between 1 and 300 seconds.",
+                  ),
+                ],
+                ephemeral: true,
               });
               return;
             }
@@ -544,7 +690,7 @@ export const setupSlashCommand: SlashCommand = {
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -554,7 +700,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_toggle_mention") {
           await settingsService.toggleMentionReply(guildId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -565,7 +714,9 @@ export const setupSlashCommand: SlashCommand = {
             .setCustomId("modal_set_mention_msg")
             .setTitle("Set Mention Reply Message");
 
-          const initialMentionMsg = (currentSettings.mentionMessage || "Need Help? go here: {channel}").slice(0, 500);
+          const initialMentionMsg = (
+            currentSettings.mentionMessage || "Need Help? go here: {channel}"
+          ).slice(0, 500);
           const msgInput = new TextInputBuilder()
             .setCustomId("input_mention_msg")
             .setLabel("Reply Message (Use {channel} for channel)")
@@ -575,22 +726,30 @@ export const setupSlashCommand: SlashCommand = {
             .setMinLength(1)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(msgInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(msgInput),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_set_mention_msg" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_set_mention_msg" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const newMsg = modalSubmit.fields.getTextInputValue("input_mention_msg").trim();
+            const newMsg = modalSubmit.fields
+              .getTextInputValue("input_mention_msg")
+              .trim();
             await modalSubmit.deferUpdate();
             await settingsService.setMentionMessage(guildId, newMsg);
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -600,16 +759,25 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_reset_mention_msg") {
           await settingsService.resetMentionMessage(guildId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
         // Page 5: Target Channel Select Menu
-        if (i.isChannelSelectMenu() && i.customId === "setup_select_mention_channel") {
+        if (
+          i.isChannelSelectMenu() &&
+          i.customId === "setup_select_mention_channel"
+        ) {
           const selectedChannelId = i.values[0];
           await settingsService.setMentionChannel(guildId, selectedChannelId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
 
@@ -627,23 +795,41 @@ export const setupSlashCommand: SlashCommand = {
             .setMaxLength(25)
             .setRequired(true);
 
-          modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(channelInput));
+          modal.addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(
+              channelInput,
+            ),
+          );
           await i.showModal(modal);
 
-          const modalSubmit = await i.awaitModalSubmit({
-            filter: m => m.customId === "modal_mention_channel_id" && m.user.id === interaction.user.id,
-            time: 60000
-          }).catch(() => null);
+          const modalSubmit = await i
+            .awaitModalSubmit({
+              filter: (m) =>
+                m.customId === "modal_mention_channel_id" &&
+                m.user.id === interaction.user.id,
+              time: 60000,
+            })
+            .catch(() => null);
 
           if (modalSubmit) {
-            const rawChannelId = modalSubmit.fields.getTextInputValue("input_mention_channel_id").replace(/[<#>]/g, "").trim();
-            const channel = interaction.guild?.channels.cache.get(rawChannelId) ||
-              (await interaction.guild?.channels.fetch(rawChannelId).catch(() => null));
+            const rawChannelId = modalSubmit.fields
+              .getTextInputValue("input_mention_channel_id")
+              .replace(/[<#>]/g, "")
+              .trim();
+            const channel =
+              interaction.guild?.channels.cache.get(rawChannelId) ||
+              (await interaction.guild?.channels
+                .fetch(rawChannelId)
+                .catch(() => null));
 
             if (!channel || !(channel instanceof TextChannel)) {
               await modalSubmit.reply({
-                embeds: [errorEmbed("Invalid channel ID or not a text channel in this server.")],
-                ephemeral: true
+                embeds: [
+                  errorEmbed(
+                    "Invalid channel ID or not a text channel in this server.",
+                  ),
+                ],
+                ephemeral: true,
               });
               return;
             }
@@ -653,7 +839,7 @@ export const setupSlashCommand: SlashCommand = {
             const updated = renderSetupPage(guildId, currentPage, guildName);
             await interaction.editReply({
               embeds: [updated.embed],
-              components: updated.components
+              components: updated.components,
             });
           }
           return;
@@ -663,7 +849,10 @@ export const setupSlashCommand: SlashCommand = {
         if (i.customId === "setup_btn_reset_mention_channel") {
           await settingsService.resetMentionChannel(guildId);
           const updated = renderSetupPage(guildId, currentPage, guildName);
-          await i.update({ embeds: [updated.embed], components: updated.components });
+          await i.update({
+            embeds: [updated.embed],
+            components: updated.components,
+          });
           return;
         }
       } catch (err: any) {
@@ -677,17 +866,19 @@ export const setupSlashCommand: SlashCommand = {
       if (reason === "done") return;
       try {
         const latest = renderSetupPage(guildId, currentPage, guildName);
-        latest.components.forEach(row => {
+        latest.components.forEach((row) => {
           row.components.forEach((c: any) => {
             if ("setDisabled" in c && typeof c.setDisabled === "function") {
               c.setDisabled(true);
             }
           });
         });
-        await interaction.editReply({ components: latest.components }).catch(() => {});
+        await interaction
+          .editReply({ components: latest.components })
+          .catch(() => {});
       } catch {}
     });
-  }
+  },
 };
 
 export default setupSlashCommand;
